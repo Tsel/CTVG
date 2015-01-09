@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Jan  5 08:45:28 2015
-Work with time functions
+Create and analyse CTVG
 @author: TOSS
 """
 
@@ -23,16 +23,14 @@ import networkx as nx
 
 def dfslice(df, start, end):
     """
-    Gibt einen dateframe für den Zeitraum [start,end] zurück.
+    Returns pandas dataframe for the time slice [start,end].
     
-    Eingabeparameter
-    df      : Dateframe aus dem der Ausschnitt gebildet werden soll
-              df muss sortiert sein.
-    start   : Startdatum (datetime.date Objekt)
-    end     : Enddatum (datetime.date Objekt)
+    Input
+    df      : Dateframe for which the time silced object is created
+    start   : start date (datetime.date Objekt)
+    end     : end date (datetime.date Objekt)
     
-    return:
-    Ausschnitt 
+    return  : sliced dataframe 
     """
     return df[start:end]
     
@@ -40,10 +38,11 @@ def readDataFile(fn):
     """
     Read the data file with the trade contacts between premises.
     
-    Eingabeparameter:
-    fn      : File Name mit den zeitaufgelösten handelsaktivitäten zwischen Betrieben
-    Rückgabewert:
-    ud      : Sortiereter DatenFrame
+    Input
+    fn      : filename of data set containing trade activities per date
+    
+    Return
+    ud      : sorted pandas dataframe with date as index 
     """
     ud = pd.read_csv(fn, sep=',', parse_dates=['Date'], index_col='Date')
     #
@@ -54,13 +53,17 @@ def readDataFile(fn):
 
 def createGraph(df):
     """
+    Input
     df is the raw edgelist
+    
+    Output
+    networkx directed graph
     """
     #
     # aggregate edgelist for dates. the edgelist must be sorted see 
     # readDataFile() above
-    adf = pd.pivot_table(df, index=['S', 'T'], values = 'VOL', aggfunc={"VOL":[len, np.sum]})
-    adf.rename(colums={'len':'Freq', 'sum':'Vol'},inplace=True)
+    adf = pd.pivot_table(df, index=['S','T'], values = 'VOL', aggfunc={"VOL":[len,np.sum]})
+    adf.rename(columns={'len':'Freq', 'sum':'Vol'}, inplace=True)
     #
     # seperate edges and attributes and recombine to attribute edgelist
     edges = list(adf.index.values)
@@ -72,9 +75,7 @@ def createGraph(df):
     G.add_edges_from(ael)
     
     return G
-    
-    
-    return nx.read_edgelist(df, create_using=nx.DiGraph())
+
 #
 # main entry point
 def main():
@@ -82,10 +83,25 @@ def main():
     # fn = "/Users/TOSS/Documents/Projects/CattleTVG/Edgelist/elri.csv"
 
     # this is a sample data set. Comment if full data set is used
-    fn = "/Users/TOSS/Documents/Projects/CattleTVG/Edgelist/elri20.csv"
+    fn = "/Users/TOSS/Documents/Projects/CattleTVG/Edgelist/elri.csv"
     
+#
+    #create a dataframe object of the raw edgelist
+    print 'read the data'
     data = readDataFile(fn)
-    G = createGraph(data)
+    #
+    # set start and end data for time slice
+    startdate = dt.datetime(2001,1,1) # January 1st, 2001
+    enddate = startdate+dt.timedelta(6) # one week interval
+    #
+    # slice the data
+    print 'slice the data'
+    df_sliced = dfslice(data,startdate,enddate)
+    
+    print 'create the graph'
+    G = createGraph(df_sliced)
+    
+    print startdate, G.number_of_nodes(), nx.density(G)
     
 if __name__ == '__main__':
     main()
