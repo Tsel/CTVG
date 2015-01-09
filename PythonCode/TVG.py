@@ -51,10 +51,11 @@ def readDataFile(fn):
     
     return ud
 
-def createGraph(df):
+def createGraph(df, G):
     """
     Input
     df is the raw edgelist
+    G  is the Directed graph object from networkx
     
     Output
     networkx directed graph
@@ -71,7 +72,7 @@ def createGraph(df):
     ael =  [edges[x] + (attributes[x],) for x in np.arange(len(edges))] 
     #
     # create the net
-    G = nx.DiGraph()
+    G.clear()
     G.add_edges_from(ael)
     
     return G
@@ -99,7 +100,8 @@ def main():
     df_sliced = dfslice(data,startdate,enddate)
     
     print 'create the graph'
-    G = createGraph(df_sliced)
+    G = nx.DiGraph()
+    G = createGraph(df_sliced, G)
     
     print startdate, G.number_of_nodes(), nx.density(G)
     
