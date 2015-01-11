@@ -41,15 +41,22 @@ def timeWindow(start, n=1, width=6, sequential=False):
         for t in np.arange(n):
             beg = start + dt.timedelta(t)
             end = beg + dt.timedelta(width)
-            yield(beg,end)
+            if end > dt.datetime(2010,12,31):
+                break
+            else:
+                yield(beg,end)
     else:
         for t in np.arange(0,n*width,width):
             beg = start + dt.timedelta(t)
             end = beg + dt.timedelta(width-1)
-            yield(beg,end)        
+            if end > dt.datetime(2010,12,31):
+                break
+            else:
+                yield(beg,end)        
     
 def main():
     start = dt.datetime(2001,1,1)
+    start2 = dt.datetime(2010,12,18)
 #    print timewindow(start, n=1)
 #    
     print 'This uses sliding window'
@@ -63,12 +70,12 @@ def main():
         print w
 
     print 'Using timeWindow sequential=False'
-    tchunks = timeWindow(start, n=3, width=7)
+    tchunks = timeWindow(start2, n=8, width=7)
     for w in tchunks:
         print w
 
     print 'Using timeWindow sequential=True'
-    tchunks = timeWindow(start, n=3, width=7, sequential=True)
+    tchunks = timeWindow(start2, n=8, width=7, sequential=True)
     for w in tchunks:
         print w
         

@@ -75,8 +75,26 @@ def createGraph(df, G):
     G.clear()
     G.add_edges_from(ael)
     
-    return G
 
+def TVGCentralities(df, G, window_start, window_steps, time_d=6):
+    """
+    Calculate centralities for TVG within the time window [window_s,window_e]
+    for time delta time_d.
+    Example:
+    The analysis starts at time window_s and the first time_frame spans
+    [window_s, window_s+time_d]. 
+    After calculating the Centralities, window_s is incremented by 1
+    > This is not complete >!!
+    """
+    
+    for t in np.arange(window_steps):
+        start = window_start+dt.timedelta(t)
+        end = start + dt.timedelta(time_d)
+        df_sliced = dfslice(df, start, end)
+        #
+        createGraph(df_sliced, G)
+        print start, nx.density(G), G.number_of_edges(), G.number_of_nodes()
+        
 #
 # main entry point
 def main():
@@ -92,18 +110,19 @@ def main():
     data = readDataFile(fn)
     #
     # set start and end data for time slice
-    startdate = dt.datetime(2001,1,1) # January 1st, 2001
-    enddate = startdate+dt.timedelta(6) # one week interval
+    startdate = dt.datetime(2000,1,1) # January 1st, 2001
+    TVGCentralities(data, nx.DiGraph(), startdate, 10, time_d=6)    
+    #enddate = startdate+dt.timedelta(6) # one week interval
     #
     # slice the data
-    print 'slice the data'
-    df_sliced = dfslice(data,startdate,enddate)
+    #print 'slice the data'
+    #df_sliced = dfslice(data,startdate,enddate)
     
-    print 'create the graph'
-    G = nx.DiGraph()
-    G = createGraph(df_sliced, G)
+    #print 'create the graph'
+    #G = nx.DiGraph()
+    #createGraph(df_sliced, G)
     
-    print startdate, G.number_of_nodes(), nx.density(G)
+    #print startdate, G.number_of_nodes(), nx.density(G)
     
 if __name__ == '__main__':
     main()
