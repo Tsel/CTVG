@@ -33,15 +33,36 @@ def sequenceWindow(start, n=1, width=2):
         end = beg + dt.timedelta(width-1)
         yield(beg,end)
         
-def timeWindow(start, n=1, width=6, sequential=False):
+def timeWindow(start, endofTW=dt.datetime(2010,12,31), n=1, width=6, sequential=False):
     """
-    returns a sequential or silding time window starting at start
+    returns a sequential or silding time window starting at start 
+    ---
+    
+    Input:
+    ----
+    start: The starting date of the time window
+    
+    endofTW : The end of the observational period. The end of the timewindow is lesser
+    of equal to endofTW.
+    
+    width: width of the time window 
+    
+    n : number of slices
+    
+    sequential (bool): 
+    
+    **False**: the window is sliding i.r. [t,t+width], [t+1,t,width+1]
+    
+    **True**: the window is sequential i.e. [t,t+width],[t+width+1,t+2 width+1]]
+    
+    yield:
+    iterator object
     """
     if sequential == False:
         for t in np.arange(n):
             beg = start + dt.timedelta(t)
             end = beg + dt.timedelta(width)
-            if end > dt.datetime(2010,12,31):
+            if end > endofTW:
                 break
             else:
                 yield(beg,end)
@@ -49,7 +70,7 @@ def timeWindow(start, n=1, width=6, sequential=False):
         for t in np.arange(0,n*width,width):
             beg = start + dt.timedelta(t)
             end = beg + dt.timedelta(width-1)
-            if end > dt.datetime(2010,12,31):
+            if end > endofTW:
                 break
             else:
                 yield(beg,end)        
@@ -57,6 +78,7 @@ def timeWindow(start, n=1, width=6, sequential=False):
 def main():
     start = dt.datetime(2001,1,1)
     start2 = dt.datetime(2010,12,18)
+    start3 = dt.datetime(2010,12,19)
 #    print timewindow(start, n=1)
 #    
     print 'This uses sliding window'

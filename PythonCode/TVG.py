@@ -9,120 +9,191 @@ import datetime as dt
 import numpy as np
 import pandas as pd
 import networkx as nx
+import TimeWindows as tw
 
-#today = dt.date.today()
-#print today
-#oneweeklater = today + dt.timedelta(7)
-#print oneweeklater
 
-# increment the dates
-#for d in np.arange(0,365,1):
-#    startdate = today + dt.timedelta(d)
-#    enddate = startdate + dt.timedelta(7)
-#    print startdate, enddate
+def readDataFile(fn):
+    """
+    Read the data file with the trade contacts between premises.
+    ----
+
+    Input
+    ----
+    fn      : filename of data set containing trade activities per date
+    Input file must have the following columns and column names:
+    - Date
+    - S
+    - T
+    - VOL
+    
+    Return
+    ----
+    ud      : sorted pandas dataframe with date as index
+    """
+    ud = pd.read_csv(fn, sep=',', parse_dates=['Date'], index_col=('Date'), 
+                     dtype={'S': str, 'T': str}, engine='c')
+    #
+    # DataFrame nach Datum sortieren und resindex
+    print 'Sort by date'
+    ud.sort(inplace=True)
+    #
+    ud.reset_index(inplace=True)
+    #
+    # add frequency column to dataframe
+    ud['Freq'] = pd.Series(np.ones(len(ud['S'])), index=ud.index)
+    return ud
+
 
 def dfslice(df, start, end):
     """
     Returns pandas dataframe for the time slice [start,end].
-    
+    --------
+
     Input
+    ----
     df      : Dateframe for which the time silced object is created
+    
     start   : start date (datetime.date Objekt)
+    
     end     : end date (datetime.date Objekt)
-    
-    return  : sliced dataframe 
-    """
-    return df[start:end]
-    
-def readDataFile(fn):
-    """
-    Read the data file with the trade contacts between premises.
-    
-    Input
-    fn      : filename of data set containing trade activities per date
-    
+
     Return
-    ud      : sorted pandas dataframe with date as index 
-    """
-    ud = pd.read_csv(fn, sep=',', parse_dates=['Date'], index_col='Date')
-    #
-    # DataFrame nach Datum sortieren
-    ud = ud.sort()
-    
-    return ud
+    ----
+    the sliced dataframe
 
-def createGraph(df, G):
     """
-    Input
-    df is the raw edgelist
-    G  is the Directed graph object from networkx
+    df.set_index('Date', inplace=True)
+    sdf = df[start:end]
+    df.reset_index(inplace=True)
+    sdf.reset_index(inplace=True)
+    return sdf
     
-    Output
-    networkx directed graph
-    """
-    #
-    # aggregate edgelist for dates. the edgelist must be sorted see 
-    # readDataFile() above
-    adf = pd.pivot_table(df, index=['S','T'], values = 'VOL', aggfunc={"VOL":[len,np.sum]})
-    adf.rename(columns={'len':'Freq', 'sum':'Vol'}, inplace=True)
-    #
-    # seperate edges and attributes and recombine to attribute edgelist
-    edges = list(adf.index.values)
-    attributes = adf.to_dict('records')
-    ael =  [edges[x] + (attributes[x],) for x in np.arange(len(edges))] 
-    #
-    # create the net
-    G.clear()
-    G.add_edges_from(ael)
     
-
-def TVGCentralities(df, G, window_start, window_steps, time_d=6):
+def selectArea(df, aS=None, aT=None, link='and'):
     """
-    Calculate centralities for TVG within the time window [window_s,window_e]
-    for time delta time_d.
-    Example:
-    The analysis starts at time window_s and the first time_frame spans
-    [window_s, window_s+time_d]. 
-    After calculating the Centralities, window_s is incremented by 1
-    > This is not complete >!!
-    """
+    Select aras for analysis.
+    ----
     
-    for t in np.arange(window_steps):
-        start = window_start+dt.timedelta(t)
-        end = start + dt.timedelta(time_d)
-        df_sliced = dfslice(df, start, end)
-        #
-        createGraph(df_sliced, G)
-        print start, nx.density(G), G.number_of_edges(), G.number_of_nodes()
+    Input:
+    ----
+    S : string (list) containing the area to which sources belong to 
+    
+    T : string (list) containing the area to which targets belong to
+    
+    link: how are the conditions linked (if not AND then OR)
+    
+    Return:
+    ----
+    dataframe with S and T belonging to areas specified
+    """
+    if aT == None and aS != None:
+        pattern = '|'.join(aS)
+        sel = df.S.str.contains(pattern)
+        return df(sel)
         
+    return asdf
+    
+
+
+def AUAgg(df, level = 'M'):
+    """
+    AUAgg aggregate for adiminstrative units:
+    
+    Input:
+    ----
+    df : raw data as dateframe 
+    
+    level : administrative unit
+    
+        M - municipality level 
+        
+        D - district level
+        
+        F - federal states level
+        
+    Return:
+    ----
+    df : dataframe aggregated for admininistrative units: 
+    """
+    cdf = df.copy()
+    if level == 'M':
+        cdf['Sagg'] = df['S'].map(lambda x: x[3:-4])
+        cdf['Tagg'] = df['T'].map(lambda x: x[3:-4])
+    elif level == 'D':
+        cdf['Sagg'] = df['S'].map(lambda x: x[3:-7])
+        cdf['Tagg'] = df['T'].map(lambda x: x[3:-7])
+    else:
+        cdf['Sagg'] = df['S'].map(lambda x: x[3:5])
+        cdf['Tagg'] = df['T'].map(lambda x: x[3:5])
+    
+    adf = pd.pivot_table(cdf, index = ['Date','Sagg','Tagg'],
+                         values=['VOL','Freq'], aggfunc={'VOL': np.sum, 
+                         'Freq': np.sum})
+                         
+    adf.reset_index(inplace=True)                         
+    adf.rename(columns={'Sagg': 'S', 'Tagg': 'T'}, inplace=True)
+
+    return adf
+    
+    
+def toEdgeList(df):
+    """
+    Transform edgelist in the dataframe to an edgelist that can be passes to 
+    networkx graph.
+    
+    Input
+    -------
+    df : the edgelist as pandas dataframe
+    
+    Return 
+    -------
+    edgelist with edges and attributes as dict
+    """
+    aeldf = pd.pivot_table(df, index = ['S','T'], values=['VOL','Freq'], 
+                           aggfunc={'VOL': np.sum, 'Freq': np.sum})
+                         
+    edges = list(aeldf.index.values)
+    attributes = aeldf.to_dict('records')
+
+    ael =  [edges[x] + (attributes[x],) for x in np.arange(len(edges))]
+    return ael
+
+
 #
 # main entry point
 def main():
     # uncomment next line for full data set
-    # fn = "/Users/TOSS/Documents/Projects/CattleTVG/Edgelist/elri.csv"
+    fn = "/Users/TOSS/Documents/Projects/CattleTVG/Edgelist/rawelri.csv"
 
     # this is a sample data set. Comment if full data set is used
-    fn = "/Users/TOSS/Documents/Projects/CattleTVG/Edgelist/elri.csv"
-    
+    #fn = "/Users/TOSS/Documents/Projects/CattleTVG/Edgelist/elri1000.csv"
+
 #
     #create a dataframe object of the raw edgelist
     print 'read the data'
-    data = readDataFile(fn)
+    df_data = readDataFile(fn)
+    print df_data.head()
+
+    # set the time horizon for this analysis
+    startdate = dt.datetime(2001,1,1)
+    enddate   = dt.datetime(2010,12,31)
+    obsperiod = dfslice(df_data, startdate, enddate)
+    # print dfsliced.head()
+    
     #
-    # set start and end data for time slice
-    startdate = dt.datetime(2000,1,1) # January 1st, 2001
-    TVGCentralities(data, nx.DiGraph(), startdate, 10, time_d=6)    
-    #enddate = startdate+dt.timedelta(6) # one week interval
-    #
-    # slice the data
-    #print 'slice the data'
-    #df_sliced = dfslice(data,startdate,enddate)
-    
-    #print 'create the graph'
-    #G = nx.DiGraph()
-    #createGraph(df_sliced, G)
-    
-    #print startdate, G.number_of_nodes(), nx.density(G)
-    
+    # setup graph
+    G = nx.DiGraph()
+    # use sequential time windows
+    tchunks = tw.timeWindow(startdate, enddate, n=520, width=7, sequential=True)
+    for w in tchunks:
+        start,end = w
+        movements = dfslice(obsperiod,start,end)
+        amove = AUAgg(movements, level='M')
+        G.clear()
+        G.add_edges_from(toEdgeList(amove))
+        Gcc=sorted(nx.strongly_connected_component_subgraphs(G), key = len, reverse=True)
+        print start.date(), len(Gcc[0]), G.number_of_nodes()
+
+
 if __name__ == '__main__':
     main()
