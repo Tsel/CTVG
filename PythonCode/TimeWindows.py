@@ -73,7 +73,38 @@ def timeWindow(start, endofTW=dt.datetime(2010,12,31), n=1, width=6, sequential=
             if end > endofTW:
                 break
             else:
-                yield(beg,end)        
+                yield(beg,end)     
+                
+                
+def expandingWindow(start, endofTW=dt.datetime(2010,12,31), n=1, width=7):
+    """
+    return expanding time window stating at start.
+    ----
+    
+    Input:
+    ----
+        + start: start date (datetime object) for the expanding window
+        + endofTW : end date of the expanding time window could not be longer that 2010-12-31
+        + n : number of times the window is expanded
+        + width : the width (days) of expansion
+    Return:
+    ----
+    yield: iterator object
+        
+    
+    Example:
+    ----
+    Let `d` denote the start date and `n` is set to 3. The the first, second 
+    and third time windows ranges from `d` to `d+6`, to `d+12` and to `d+18` 
+    respectively.
+    """
+    for t in np.arange(width,(n+1)*width,width):
+        print t
+        end = start + dt.timedelta(t-1)
+        if end > endofTW:
+            break
+        else:
+            yield(start,end) 
     
 def main():
     start = dt.datetime(2001,1,1)
