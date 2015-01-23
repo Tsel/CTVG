@@ -99,7 +99,7 @@ def expandingWindow(start, endofTW=dt.datetime(2010,12,31), n=1, width=7):
     respectively.
     """
     for t in np.arange(width,(n+1)*width,width):
-        print t
+        # print t
         end = start + dt.timedelta(t-1)
         if end > endofTW:
             break
