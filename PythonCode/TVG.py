@@ -91,7 +91,6 @@ def selectArea(df, aS=None, aT=None, link='and'):
         sel = df.S.str.contains(pattern)
         return df(sel)
         
-    return asdf
     
 
 
