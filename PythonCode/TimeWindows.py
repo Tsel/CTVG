@@ -33,16 +33,16 @@ def sequenceWindow(start, n=1, width=2):
         end = beg + dt.timedelta(width-1)
         yield(beg,end)
         
-def timeWindow(start, endofTW=dt.datetime(2010,12,31), n=1, width=6, sequential=False):
+def twindow(wstart, wend=dt.datetime(2010,12,31), n=1, width=7, sequential=False):
     """
     returns a sequential or silding time window starting at start 
     ---
     
     Input:
     ----
-    start: The starting date of the time window
+    wstart: The starting date of the time window
     
-    endofTW : The end of the observational period. The end of the timewindow is lesser
+    wend : The end of the observational period. The end of the timewindow is lesser
     of equal to endofTW.
     
     width: width of the time window 
@@ -60,17 +60,17 @@ def timeWindow(start, endofTW=dt.datetime(2010,12,31), n=1, width=6, sequential=
     """
     if sequential == False:
         for t in np.arange(n):
-            beg = start + dt.timedelta(t)
-            end = beg + dt.timedelta(width)
-            if end > endofTW:
+            beg = wstart + dt.timedelta(t)
+            end = beg + dt.timedelta(width-1)
+            if end > wend:
                 break
             else:
                 yield(beg,end)
     else:
         for t in np.arange(0,n*width,width):
-            beg = start + dt.timedelta(t)
+            beg = wstart + dt.timedelta(t)
             end = beg + dt.timedelta(width-1)
-            if end > endofTW:
+            if end > wend:
                 break
             else:
                 yield(beg,end)     
@@ -123,12 +123,12 @@ def main():
         print w
 
     print 'Using timeWindow sequential=False'
-    tchunks = timeWindow(start2, n=8, width=7)
+    tchunks = twindow(start2, n=8, width=7)
     for w in tchunks:
         print w
 
     print 'Using timeWindow sequential=True'
-    tchunks = timeWindow(start2, n=8, width=7, sequential=True)
+    tchunks = twindow(start2, n=8, width=7, sequential=True)
     for w in tchunks:
         print w
         
