@@ -147,6 +147,7 @@ def toEdgeList(df):
     Return 
     -------
     edgelist with edges and attributes as dict
+    dataframe of edgelist
     """
     aeldf = pd.pivot_table(df, index = ['S','T'], values=['VOL','Freq'], 
                            aggfunc={'VOL': np.sum, 'Freq': np.sum})
@@ -155,8 +156,17 @@ def toEdgeList(df):
     attributes = aeldf.to_dict('records')
 
     ael =  [edges[x] + (attributes[x],) for x in np.arange(len(edges))]
-    return ael
+    return ael, aeldf
 
+
+def toFile(df, fn):
+    ael4file = pd.pivot_table(df, index = ['Date','S','T'], values=['VOL','Freq'], 
+                              aggfunc={'VOL': np.sum, 'Freq': np.sum})
+    
+    ael4file.reset_index(inplace=True)
+    
+    ael4file.to_csv(fn, sep = " ", header = (["Date","S","T","VOL","T"]))
+    
 
 #
 # main entry point

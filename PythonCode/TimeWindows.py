@@ -33,6 +33,46 @@ def sequenceWindow(start, n=1, width=2):
         end = beg + dt.timedelta(width-1)
         yield(beg,end)
         
+def tiwi(wstart, wend=dt.datetime(2010,12,31), width=7, sequential=False):
+    """
+    returns sequential or sliding time windows starting at start. The time 
+    windows always end before wend.
+    ---
+    
+    Input:
+    ---
+    wstart: the starting date of the sequence of time windows,
+    
+    wend: The end of the sequence of time windows.
+    
+    width: The width of the time windows given in days.
+    
+    sequential (bool): indicates whether the time windows are sequential.
+    Default = False
+    
+    Return:
+    ---
+    iterator object.
+    """
+    #
+    # calculate the number of intervals
+    if sequential == True:
+        n = ((wend - wstart).days+1)/width
+        ts = np.arange(0,n*width,width)
+    else:
+        td = (wend - dt.timedelta(width-1)) - wstart
+        n = td.days + 1
+        ts = np.arange(n)
+        
+    for t in ts:
+        beg = wstart + dt.timedelta(t)
+        end = beg + dt.timedelta(width-1)
+        if end > wend:
+            break
+        else:
+            yield(beg,end)
+    
+        
 def twindow(wstart, wend=dt.datetime(2010,12,31), n=1, width=7, sequential=False):
     """
     returns a sequential or silding time window starting at start 
